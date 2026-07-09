@@ -607,23 +607,24 @@ S2_MONTHS.forEach((mo, i)=>{ S2 = S2.concat(genMonthDays(mo, i)); });
 S2.push({date:"2027-11-13", type:"exam", tasks:["應試 Day 1：RC / PC / 結構動力 / 耐震設計 / 鋼結構設計（日期為暫定，請依正式公告調整）"], week:"exam", weekLabel:"目標考試", range:"2027/11 中（暫定）", core:false});
 S2.push({date:"2027-11-14", type:"exam", tasks:["應試 Day 2：結構 / 土壤力學 / 基礎工程"], week:"exam", weekLabel:"目標考試", range:"2027/11 中（暫定）", core:false});
 
-/* ============ Persistent storage ============ */
+/* ============ Persistent storage (瀏覽器本機儲存 localStorage) ============ */
+const STORAGE_KEY = 'sfe-progress-v2';
 let STATE = {s1:{}, s2:{}};
 let saveTimer=null;
 async function loadState(){
   try{
-    const res = await window.storage.get('sfe-progress-v2', false);
-    if(res && res.value) STATE = JSON.parse(res.value);
-  }catch(e){ /* no data yet */ }
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) STATE = JSON.parse(raw);
+  }catch(e){ /* 尚無資料或格式錯誤，使用預設空狀態 */ }
   if(!STATE.s1) STATE.s1={};
   if(!STATE.s2) STATE.s2={};
 }
 function queueSave(){
   document.getElementById('saveStatus').textContent = '儲存中…';
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(async ()=>{
+  saveTimer = setTimeout(()=>{
     try{
-      await window.storage.set('sfe-progress-v2', JSON.stringify(STATE), false);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE));
       document.getElementById('saveStatus').textContent = '已儲存 ✓';
     }catch(e){ document.getElementById('saveStatus').textContent = '儲存失敗，稍後重試'; }
   }, 400);
