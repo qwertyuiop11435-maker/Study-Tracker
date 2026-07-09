@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>結構技師考試讀書計畫（每日版）</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  :root{
+    --blue-0:#0c2540; --blue-1:#123a5e; --blue-2:#1a4a76;
+    --line:#cfe4f7; --line-dim:rgba(207,228,247,0.14);
+    --paper:#f6f2e7; --paper-2:#eee7d6;
+    --ink:#132437; --ink-soft:#4a5b6e;
+    --amber:#e3a13c; --amber-deep:#b97b1f;
+    --cyan:#6fc6e8; --ok:#6fae7c; --warn:#c96a4a;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--blue-0);
+    background-image:linear-gradient(var(--line-dim) 1px, transparent 1px),
+                      linear-gradient(90deg, var(--line-dim) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--line);
+    font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+    min-height:100vh; padding-bottom:60px;
+  }
+  .mono{font-family:"IBM Plex Mono","Roboto Mono",monospace;}
+
+  .titleblock{margin:24px auto 18px; max-width:1060px; padding:0 20px;}
+  .tb-frame{border:2px solid var(--line); position:relative; padding:22px 26px 16px;}
+  .tb-frame::before{content:""; position:absolute; inset:8px; border:1px solid var(--line-dim); pointer-events:none;}
+  .tb-eyebrow{font-family:"IBM Plex Mono",monospace; letter-spacing:.24em; font-size:11px; color:var(--cyan); text-transform:uppercase;}
+  .tb-title{font-size:clamp(24px,4vw,36px); margin:6px 0 4px; font-weight:700; color:#fff;}
+  .tb-sub{opacity:.85; font-size:13.5px; margin-bottom:14px;}
+  .tb-grid{display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid var(--line-dim); margin-top:10px;}
+  .tb-cell{border-right:1px solid var(--line-dim); padding:10px 14px;}
+  .tb-cell:last-child{border-right:none;}
+  .tb-cell .k{font-family:"IBM Plex Mono",monospace; font-size:10px; letter-spacing:.15em; color:var(--cyan); text-transform:uppercase;}
+  .tb-cell .v{font-size:15px; margin-top:4px; font-weight:600; color:#fff;}
+  #saveStatus{font-size:11px; color:var(--ok); font-family:"IBM Plex Mono",monospace;}
+
+  .tabs{max-width:1060px; margin:0 auto 18px; padding:0 20px; display:flex; gap:8px; flex-wrap:wrap;}
+  .tab-btn{font-family:"IBM Plex Mono",monospace; background:transparent; border:1px solid var(--line-dim); color:var(--line); padding:9px 15px; font-size:12px; letter-spacing:.05em; cursor:pointer; border-radius:3px;}
+  .tab-btn:hover{border-color:var(--cyan); color:#fff;}
+  .tab-btn.active{background:var(--cyan); color:var(--blue-0); border-color:var(--cyan); font-weight:700;}
+
+  .panel{display:none; max-width:1060px; margin:0 auto; padding:0 20px;}
+  .panel.active{display:block;}
+
+  .sec-h{display:flex; align-items:baseline; gap:10px; margin:28px 0 12px;}
+  .sec-h .num{font-family:"IBM Plex Mono",monospace; color:var(--amber); font-size:13px;}
+  .sec-h h2{font-size:18px; margin:0; color:#fff;}
+  .sec-note{opacity:.75; font-size:13.5px; margin:-4px 0 16px; line-height:1.7;}
+  .tip{background:rgba(111,198,232,0.08); border:1px solid var(--line-dim); padding:14px 16px; border-radius:2px; font-size:13.5px; line-height:1.8; margin-bottom:16px;}
+  .tip b{color:var(--cyan);}
+
+  .rv-stat{display:flex; gap:16px; flex-wrap:wrap; margin-bottom:18px;}
+  .rv-stat-box{background:var(--paper); color:var(--ink); padding:12px 16px; border-radius:2px; min-width:140px;}
+  .rv-stat-box .num{font-family:"IBM Plex Mono",monospace; font-size:22px; font-weight:700; color:var(--blue-1);}
+  .rv-stat-box .lbl{font-size:12px; color:var(--ink-soft);}
+  .rv-list-item{background:var(--paper); color:var(--ink); padding:10px 14px; border-radius:2px; margin-bottom:8px; border-left:4px solid var(--amber-deep); font-size:13.5px;}
+  .rv-list-item .rv-date{font-family:"IBM Plex Mono",monospace; font-weight:700; margin-right:8px;}
+  .rv-list-item.overdue{border-left-color:var(--warn);}
+  .rv-empty{opacity:.6; font-size:13px; padding:10px 0;}
+
+  table.ref{width:100%; border-collapse:collapse; background:var(--paper); color:var(--ink); font-size:13px; margin-bottom:26px;}
+  table.ref th{background:var(--blue-1); color:#fff; text-align:left; padding:7px 10px; font-family:"IBM Plex Mono",monospace; font-size:11px;}
+  table.ref td{padding:6px 10px; border-bottom:1px solid var(--paper-2);}
+  .subject-hd td{background:var(--paper-2); font-weight:700; font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--blue-1);}
+
+  table.hours-table{width:100%; border-collapse:collapse; background:var(--paper); color:var(--ink); font-size:13.5px; margin-bottom:16px; border-radius:2px; overflow:hidden;}
+  table.hours-table th{background:var(--blue-1); color:#fff; text-align:left; padding:9px 12px; font-family:"IBM Plex Mono",monospace; font-size:11px;}
+  table.hours-table td{padding:9px 12px; border-bottom:1px solid var(--paper-2);}
+  table.hours-table tr.hours-total td{background:var(--paper-2); font-weight:700; color:var(--blue-1);}
+  table.hours-table tr:last-child td{border-bottom:none;}
+
+  .search-box{
+    width:100%; padding:11px 14px; font-size:14px; border:1px solid var(--line-dim); border-radius:4px;
+    background:rgba(255,255,255,0.06); color:#fff; font-family:inherit;
+  }
+  .search-box::placeholder{color:var(--line); opacity:.5;}
+  .search-box:focus{outline:none; border-color:var(--cyan);}
+  table.ref td.ft-date{font-family:"IBM Plex Mono",monospace; white-space:nowrap;}
+  table.ref td.ft-type{font-family:"IBM Plex Mono",monospace; font-size:10.5px;}
+  table.ref td.ft-done{text-align:center;}
+  table.ref tr.ft-today td{background:#fbead2;}
+  table.ref tr.ft-exam td{background:#f6dccb;}
+
+  footer{text-align:center; font-size:12px; opacity:.5; margin-top:40px; font-family:"IBM Plex Mono",monospace;}
+
+  /* ---- swipeable day pager (shared by stage1 & stage2) ---- */
+  .pager-topbar{
+    position:sticky; top:0; z-index:5; background:var(--blue-1); border-bottom:1px solid var(--line-dim);
+    padding:10px 14px 12px;
+  }
+  .pt-row1{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px;}
+  .pt-week{color:#fff; font-weight:700; font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; min-width:0;}
+  .pager-today-btn{
+    font-family:"IBM Plex Mono",monospace; background:var(--cyan); color:var(--blue-0); border:none;
+    padding:7px 16px; border-radius:16px; font-size:12px; font-weight:700; cursor:pointer; flex:0 0 auto;
+  }
+  .pt-progress-wrap{background:rgba(255,255,255,0.12); border-radius:20px; height:9px; overflow:hidden; margin-bottom:8px;}
+  .pt-progress-fill{height:100%; background:var(--ok); border-radius:20px; transition:width .3s; width:0%;}
+  .pt-progress-text{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ok); text-align:center; margin:-5px 0 8px;}
+  .pt-row2{display:flex; align-items:center; justify-content:center; gap:14px;}
+  .pager-nav-btn{
+    width:38px; height:38px; border-radius:50%; border:1px solid var(--line-dim);
+    background:rgba(255,255,255,0.06); color:#fff; font-size:19px; line-height:1; cursor:pointer; flex:0 0 auto;
+  }
+  .pager-nav-btn:active{background:var(--cyan); color:var(--blue-0);}
+  .pt-pos{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--cyan); min-width:100px; text-align:center;}
+
+  .day-pager{
+    display:flex; overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .day-pager::-webkit-scrollbar{display:none;}
+  .day-page{
+    flex:0 0 100%; scroll-snap-align:start; padding:18px 18px 30px;
+    background:var(--paper); color:var(--ink); min-height:calc(100vh - 300px);
+    display:flex; flex-direction:column;
+  }
+  .day-page.today{background:#fbead2;}
+  .day-page.exam{background:#f6dccb;}
+  .dp-date-row{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px;}
+  .dp-date{font-family:"IBM Plex Mono",monospace; font-size:22px; font-weight:700; color:var(--blue-1);}
+  .dp-dow{font-size:14px; color:var(--ink-soft);}
+  .dp-type{font-family:"IBM Plex Mono",monospace; font-size:11px; padding:3px 9px; border-radius:3px; background:var(--blue-1); color:#fff;}
+  .dp-type.buffer{background:#6f8f7a;} .dp-type.practice{background:var(--amber-deep);}
+  .dp-type.review{background:#7a6fb0;} .dp-type.exam{background:var(--warn);} .dp-type.mock{background:#a9432e;}
+  .dp-week-range{font-size:12.5px; color:var(--ink-soft); margin-bottom:16px;}
+  .dp-core{display:inline-block; background:var(--amber); color:var(--ink); font-family:"IBM Plex Mono",monospace; font-size:10.5px; padding:2px 7px; border-radius:2px; font-weight:700; margin-left:6px;}
+  .badge-here{background:#fff; color:var(--blue-0); font-family:"IBM Plex Mono",monospace; font-size:10.5px; padding:2px 6px; border-radius:2px; font-weight:700;}
+  .dp-task-box{
+    background:#fffdf7; border:1px solid var(--paper-2); border-radius:6px; padding:16px;
+    display:flex; gap:12px; align-items:flex-start; margin-bottom:16px;
+  }
+  .dp-task-box input{width:22px; height:22px; accent-color:var(--blue-1); margin-top:2px; flex:0 0 auto;}
+  .dp-task-text{font-size:16px; line-height:1.6;}
+  .dp-task-text.done-text{text-decoration:line-through; opacity:.5;}
+  .dp-note-label{font-size:12.5px; color:var(--ink-soft); margin-bottom:6px;}
+  .dp-note textarea{
+    width:100%; min-height:110px; font-size:14.5px; padding:10px; border:1px solid var(--paper-2);
+    border-radius:6px; font-family:inherit; resize:vertical; background:#fffdf7; color:var(--ink);
+  }
+  .dp-spacer{flex:1;}
+  .dp-swipehint{text-align:center; font-size:12px; color:var(--ink-soft); opacity:.6; margin-top:auto; padding-top:10px;}
+</style>
+</head>
+<body>
+
+<div class="titleblock">
+  <div class="tb-frame">
+    <div class="tb-eyebrow">STUDY PLAN — 每日版</div>
+    <div class="tb-title">結構技師考試 讀書計畫（每日行動版）</div>
+    <div class="tb-sub">階段一 + 階段二 皆已拆到每一天 · 打勾與備註會自動儲存</div>
+    <div class="tb-grid">
+      <div class="tb-cell"><div class="k">plan start</div><div class="v">2026/07/09</div></div>
+      <div class="tb-cell"><div class="k">checkpoint exam</div><div class="v">2026/11/14–15</div></div>
+      <div class="tb-cell"><div class="k">target exam</div><div class="v">2027/11 中（暫定）</div></div>
+      <div class="tb-cell"><div class="k">儲存狀態</div><div class="v" id="saveStatus">載入中…</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="overview">總覽</button>
+  <button class="tab-btn" data-tab="stage1">階段一 · 每日（2026）</button>
+  <button class="tab-btn" data-tab="stage2">階段二 · 每日（2027）</button>
+  <button class="tab-btn" data-tab="review">複盤總覽</button>
+  <button class="tab-btn" data-tab="reference">重要性總表</button>
+  <button class="tab-btn" data-tab="fulltable">完整總表</button>
+</div>
+
+<!-- OVERVIEW -->
+<div class="panel active" id="panel-overview">
+  <div class="sec-h"><span class="num">00</span><h2>使用方式</h2></div>
+  <div class="tip">
+    <b>每天</b>打開「階段一」或「階段二」分頁，左右滑動找到今天（頁面頂部有「回到今天」按鈕可以直接跳回），做完就打勾，卡住的地方寫進備註欄，會自動存檔。<br><br>
+    <b>複盤總覽</b>分頁會自動整理：整體完成度、所有備註（=曾經卡住的地方）、已過期還沒打勾的項目（=進度落後要補的地方）。
+  </div>
+
+  <div class="sec-h"><span class="num">01</span><h2>建議每週讀書時數</h2></div>
+  <div class="sec-note">這份計畫本身就是照這個節奏排的：週五固定是彈性緩衝日；平日每天安排1個內容單位，週末時間較多，每天安排2個內容單位。僅供參考，可依實際生活彈性調整。</div>
+  <table class="hours-table">
+    <tr><th>時段</th><th>建議時數</th><th>用途</th></tr>
+    <tr><td>平日 週一 – 週四（晚上）</td><td class="mono">每天約 2–2.5 小時</td><td>精讀新章節、例題演算（1個內容單位）</td></tr>
+    <tr><td>週五</td><td class="mono">彈性 / 緩衝</td><td>固定全休，或補前面落後的進度</td></tr>
+    <tr><td>週六</td><td class="mono">約 6 小時</td><td>2個內容單位（例如理論＋例題，或例題＋整理筆記）</td></tr>
+    <tr><td>週日</td><td class="mono">約 6 小時</td><td>2個內容單位，含本週複習、記錄不熟之處</td></tr>
+    <tr class="hours-total"><td>每週總計</td><td class="mono">約 20–21 小時</td><td>—</td></tr>
+  </table>
+  <div class="tip">
+    <b>執行原則：</b>結構技師的計算題往往單題要20–25分鐘，卡片上寫的「例題演算」通常只夠練2–3題，不用求快、求多。核心重點章節（標示「核心重點」的日子）盡量不要跳過；平日太累時，寧可縮短為次一個內容單位、把當天沒做完的挪到週末，也不要整晚完全跳過。
+  </div>
+
+  <div class="sec-h"><span class="num">02</span><h2>整體進度</h2></div>
+  <div class="rv-stat" id="ovStats"></div>
+</div>
+
+<!-- STAGE 1 -->
+<div class="panel" id="panel-stage1" style="padding:0;">
+  <div class="pager-topbar">
+    <div class="pt-row1">
+      <div class="pt-week" id="s1-week">—</div>
+      <button class="pager-today-btn" id="s1-todayBtn">回到今天</button>
+    </div>
+    <div class="pt-progress-wrap"><div class="pt-progress-fill" id="s1-progFill"></div></div>
+    <div class="pt-progress-text" id="s1-progText">—</div>
+    <div class="pt-row2">
+      <button class="pager-nav-btn" id="s1-prevBtn" aria-label="上一天">‹</button>
+      <span class="pt-pos" id="s1-pos">—</span>
+      <button class="pager-nav-btn" id="s1-nextBtn" aria-label="下一天">›</button>
+    </div>
+  </div>
+  <div class="day-pager" id="s1-pager"></div>
+</div>
+
+<!-- STAGE 2 -->
+<div class="panel" id="panel-stage2" style="padding:0;">
+  <div class="pager-topbar">
+    <div class="pt-row1">
+      <div class="pt-week" id="s2-week">—</div>
+      <button class="pager-today-btn" id="s2-todayBtn">回到今天</button>
+    </div>
+    <div class="pt-progress-wrap"><div class="pt-progress-fill" id="s2-progFill"></div></div>
+    <div class="pt-progress-text" id="s2-progText">—</div>
+    <div class="pt-row2">
+      <button class="pager-nav-btn" id="s2-prevBtn" aria-label="上一天">‹</button>
+      <span class="pt-pos" id="s2-pos">—</span>
+      <button class="pager-nav-btn" id="s2-nextBtn" aria-label="下一天">›</button>
+    </div>
+  </div>
+  <div class="day-pager" id="s2-pager"></div>
+</div>
+
+<!-- REVIEW -->
+<div class="panel" id="panel-review">
+  <div class="sec-h"><span class="num">RV</span><h2>複盤總覽</h2></div>
+  <div class="sec-note">這頁會依你目前的打勾與備註狀況自動整理，不用手動維護。</div>
+  <div class="rv-stat" id="rvStats"></div>
+  <div class="sec-h"><span class="num">RV-1</span><h2>我寫過備註的日子（=曾卡住的地方）</h2></div>
+  <div id="rvNotes"></div>
+  <div class="sec-h"><span class="num">RV-2</span><h2>已過期但還沒打勾的項目（=進度落後）</h2></div>
+  <div id="rvOverdue"></div>
+</div>
+
+<!-- REFERENCE -->
+<div class="panel" id="panel-reference">
+  <div class="sec-h"><span class="num">REF</span><h2>各科章節重要性總表</h2></div>
+  <div class="sec-note">鋼結構設計老師未給重要性星等，改以近 10 年結構技師考題「章節分布分數」標示。</div>
+  <table class="ref">
+    <tr class="subject-hd"><td colspan="3">RC · 鋼筋混凝土（12 章）</td></tr>
+    <tr><th>章節</th><th>名稱</th><th>重要性</th></tr>
+    <tr><td>Ch.1</td><td>序論</td><td>—</td></tr>
+    <tr><td>Ch.2</td><td>梁彎矩強度分析</td><td>★★★★</td></tr>
+    <tr><td>Ch.3</td><td>梁主筋設計</td><td>★★★★★</td></tr>
+    <tr><td>Ch.4</td><td>剪力分析</td><td>★★★★</td></tr>
+    <tr><td>Ch.5</td><td>短柱分析</td><td>★★</td></tr>
+    <tr><td>Ch.6</td><td>使用性分析</td><td>★★</td></tr>
+    <tr><td>Ch.7</td><td>伸展、續接、彎鉤等</td><td>★★</td></tr>
+    <tr><td>Ch.8</td><td>獨立基腳分析、設計</td><td>★★</td></tr>
+    <tr><td>Ch.9</td><td>抗扭分析、設計</td><td>★★</td></tr>
+    <tr><td>Ch.10</td><td>細長柱分析</td><td>★★</td></tr>
+    <tr><td>Ch.11</td><td>耐震設計</td><td>★★★★</td></tr>
+    <tr><td>Ch.12</td><td>雙向板</td><td>幾乎不考</td></tr>
+    <tr class="subject-hd"><td colspan="3">PC · 預力混凝土（9 章）</td></tr>
+    <tr><td>Ch.1</td><td>PC 原理</td><td>★</td></tr>
+    <tr><td>Ch.2</td><td>撓曲基本概念</td><td>★</td></tr>
+    <tr><td>Ch.3</td><td>施預力工法</td><td>★</td></tr>
+    <tr><td>Ch.4</td><td>預力損失</td><td>★</td></tr>
+    <tr><td>Ch.5</td><td>斷面應力計算</td><td>★★★★★</td></tr>
+    <tr><td>Ch.6</td><td>所需預力與鋼腱偏心距</td><td>★★★★★</td></tr>
+    <tr><td>Ch.7</td><td>斷面破壞彎矩</td><td>★★★★</td></tr>
+    <tr><td>Ch.8</td><td>剪力設計</td><td>★★★</td></tr>
+    <tr><td>Ch.9</td><td>預力連續梁</td><td>★★★</td></tr>
+    <tr class="subject-hd"><td colspan="3">結構動力（7 章）</td></tr>
+    <tr><td>Ch.1</td><td>單自由度運動方程式推導</td><td>★★</td></tr>
+    <tr><td>Ch.2</td><td>離散式多自由度系統之運動方程式</td><td>★★</td></tr>
+    <tr><td>Ch.3</td><td>單自由度系統之自由振動反應</td><td>★★</td></tr>
+    <tr><td>Ch.4</td><td>單自由度系統之強迫振動反應</td><td>★★</td></tr>
+    <tr><td>Ch.5</td><td>單自由度系統似頻率分析</td><td>★</td></tr>
+    <tr><td>Ch.6</td><td>離散式多自由度系統之自由振動反應</td><td>★★★★★</td></tr>
+    <tr><td>Ch.7</td><td>離散式多自由度系統之強迫振動反應</td><td>★★★★★</td></tr>
+    <tr class="subject-hd"><td colspan="3">耐震設計（4 章）</td></tr>
+    <tr><td>Ch.1</td><td>地震工程概論</td><td>★</td></tr>
+    <tr><td>Ch.2</td><td>地震反應譜</td><td>★★</td></tr>
+    <tr><td>Ch.3</td><td>動力反應分析</td><td>★★</td></tr>
+    <tr><td>Ch.4</td><td>建築耐震設計規範</td><td>★★★★★</td></tr>
+    <tr class="subject-hd"><td colspan="3">鋼結構設計（8 章，以近10年考題分數替代）</td></tr>
+    <tr><td>Ch.1</td><td>導論</td><td class="mono">105 分</td></tr>
+    <tr><td>Ch.2</td><td>壓力桿件</td><td class="mono">200 分</td></tr>
+    <tr><td>Ch.3</td><td>梁桿件</td><td class="mono">115 分</td></tr>
+    <tr><td>Ch.4</td><td>梁柱桿件</td><td class="mono">80 分</td></tr>
+    <tr><td>Ch.5</td><td>拉力桿件</td><td class="mono">70 分</td></tr>
+    <tr><td>Ch.6</td><td>螺栓接合</td><td class="mono">40 分</td></tr>
+    <tr><td>Ch.7</td><td>銲接接合</td><td class="mono">225 分（最重）</td></tr>
+    <tr><td>Ch.8</td><td>耐震設計</td><td class="mono">0 分，但可能考問答</td></tr>
+    <tr><td>—</td><td>綜合型考題</td><td class="mono">165 分</td></tr>
+    <tr class="subject-hd"><td colspan="3">結構（分析）（14 章）— 階段二</td></tr>
+    <tr><td>Ch.1</td><td>序論</td><td>—</td></tr>
+    <tr><td>Ch.2</td><td>穩定分析</td><td>★</td></tr>
+    <tr><td>Ch.3</td><td>靜定梁分析</td><td>★★★★★</td></tr>
+    <tr><td>Ch.4</td><td>靜定鋼架分析</td><td>★★★★★</td></tr>
+    <tr><td>Ch.5</td><td>靜定桁架分析</td><td>★★★★★</td></tr>
+    <tr><td>Ch.6</td><td>靜定結構變位分析</td><td>★★★★</td></tr>
+    <tr><td>Ch.7</td><td>靜定結構影響線</td><td>★★★</td></tr>
+    <tr><td>Ch.8</td><td>諧和變形法</td><td>★★</td></tr>
+    <tr><td>Ch.9</td><td>傾角變位法</td><td>★★★</td></tr>
+    <tr><td>Ch.10</td><td>彎矩分配法</td><td>★★★</td></tr>
+    <tr><td>Ch.11</td><td>綜合彎矩分配法</td><td>★★</td></tr>
+    <tr><td>Ch.12</td><td>靜不定結構影響線</td><td>★★</td></tr>
+    <tr><td>Ch.13</td><td>結構矩陣</td><td>★★</td></tr>
+    <tr><td>Ch.14</td><td>靜不定結構之近似分析</td><td>★</td></tr>
+    <tr class="subject-hd"><td colspan="3">土壤力學（7 章）— 階段二</td></tr>
+    <tr><td>Ch.1</td><td>序論</td><td>—</td></tr>
+    <tr><td>Ch.2</td><td>土壤基本指數</td><td>★★</td></tr>
+    <tr><td>Ch.3</td><td>土壤分類</td><td>★★★</td></tr>
+    <tr><td>Ch.4</td><td>土壤應力</td><td>★★</td></tr>
+    <tr><td>Ch.5</td><td>滲透性</td><td>★★★★</td></tr>
+    <tr><td>Ch.6</td><td>壓縮性</td><td>★★★★</td></tr>
+    <tr><td>Ch.7</td><td>剪力強度</td><td>★★★★</td></tr>
+    <tr class="subject-hd"><td colspan="3">基礎工程（7 章）— 階段二</td></tr>
+    <tr><td>Ch.1</td><td>側向土壓力與擋土壁體</td><td>★★★★</td></tr>
+    <tr><td>Ch.2</td><td>邊坡穩定分析</td><td>★★</td></tr>
+    <tr><td>Ch.3</td><td>淺基礎承載力</td><td>★★★★</td></tr>
+    <tr><td>Ch.4</td><td>筏基與開挖檢討</td><td>★★</td></tr>
+    <tr><td>Ch.5</td><td>樁基礎</td><td>★★★★</td></tr>
+    <tr><td>Ch.6</td><td>夯實與地盤改良</td><td>★</td></tr>
+    <tr><td>Ch.7</td><td>液化</td><td>★</td></tr>
+  </table>
+</div>
+
+<!-- FULL TABLE -->
+<div class="panel" id="panel-fulltable">
+  <div class="sec-h"><span class="num">ALL</span><h2>完整排程總表</h2></div>
+  <div class="sec-note">列出目前排定的全部日期與任務，可用下面的搜尋框快速找到特定章節或關鍵字（例如「銲接」、「土力」、「模擬考」）。這裡僅供瀏覽查找，打勾/備註請回到「階段一」「階段二」分頁操作，狀態會同步顯示在這裡。</div>
+  <input type="text" id="fullTableSearch" class="search-box" placeholder="搜尋章節/關鍵字…">
+
+  <div class="sec-h" style="margin-top:22px;"><span class="num">S1</span><h2>階段一（2026/07/09 – 2026/11/15，共 130 天）</h2></div>
+  <table class="ref" id="fullTableS1">
+    <thead><tr><th style="width:70px;">日期</th><th style="width:36px;">週</th><th style="width:64px;">類型</th><th>今日任務</th><th style="width:40px;">完成</th></tr></thead>
+    <tbody></tbody>
+  </table>
+
+  <div class="sec-h"><span class="num">S2</span><h2>階段二（2026/11/16 – 2027/11 中，共 362 天）</h2></div>
+  <table class="ref" id="fullTableS2">
+    <thead><tr><th style="width:70px;">日期</th><th style="width:36px;">週</th><th style="width:64px;">類型</th><th>今日任務</th><th style="width:40px;">完成</th></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<footer>結構技師考試讀書計畫 · 每日版 · 進度自動儲存於本頁面的個人資料中</footer>
+
+<script>
+/* ============ helpers ============ */
+const DOW = ['日','一','二','三','四','五','六'];
+const typeLabelMap = {study:'精讀',buffer:'緩衝',practice:'練習',review:'複習',mock:'模擬考',exam:'應試'};
+function isoOf(dt){ return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'); }
+function todayKey(){ return isoOf(new Date()); }
+function addDays(dt,n){ const c=new Date(dt); c.setDate(c.getDate()+n); return c; }
+function debounce(fn, ms){ let t; return function(){ clearTimeout(t); t=setTimeout(fn, ms); }; }
+
+/* ============ STAGE 1 : generated day-by-day, paced by chapter difficulty ============ */
+/* 每章節依重要性/近10年考題分數給 1–4 個「內容單位」（理論、例題...），因為結構技師的計算題往往單題要20–25分鐘。
+   排程規則：彈性緩衝日固定排在週五；平日（一~四）每天安排1個內容單位（約2–2.5小時）；
+   週六、週日時間較多（約6小時），每天安排2個內容單位。 */
+function starTierDays(stars){ return ({5:4,4:3,3:3,2:2,1:1,0:1})[stars] ?? 1; }
+function scoreTierDays(score){ if(score>=200) return 4; if(score>=150) return 3; if(score>=100) return 2; return 1; }
+
+const RC_CH = [
+  {name:"序論", stars:0},
+  {name:"梁彎矩強度分析", stars:4},
+  {name:"梁主筋設計", stars:5},
+  {name:"剪力分析", stars:4},
+  {name:"短柱分析", stars:2},
+  {name:"使用性分析", stars:2},
+  {name:"伸展、續接、彎鉤等", stars:2},
+  {name:"獨立基腳分析、設計", stars:2},
+  {name:"抗扭分析、設計", stars:2},
+  {name:"細長柱分析", stars:2},
+  {name:"耐震設計", stars:4},
+  {name:"雙向板（幾乎不考，略讀即可）", stars:0, days:1},
+];
+const PC_CH = [
+  {name:"PC原理", stars:1},
+  {name:"撓曲基本概念", stars:1},
+  {name:"施預力工法", stars:1},
+  {name:"預力損失", stars:1},
+  {name:"斷面應力計算", stars:5},
+  {name:"所需預力與鋼腱偏心距", stars:5},
+  {name:"斷面破壞彎矩", stars:4},
+  {name:"剪力設計", stars:3},
+  {name:"預力連續梁", stars:3},
+];
+const SD_CH = [
+  {name:"單自由度運動方程式推導", stars:2},
+  {name:"離散式多自由度系統之運動方程式", stars:2},
+  {name:"單自由度系統之自由振動反應", stars:2},
+  {name:"單自由度系統之強迫振動反應", stars:2},
+  {name:"單自由度系統似頻率分析", stars:1},
+  {name:"離散式多自由度系統之自由振動反應", stars:5},
+  {name:"離散式多自由度系統之強迫振動反應", stars:5},
+];
+const EQ_CH = [
+  {name:"地震工程概論", stars:1},
+  {name:"地震反應譜", stars:2},
+  {name:"動力反應分析", stars:2},
+  {name:"建築耐震設計規範", stars:5},
+];
+const STEEL_CH = [
+  {name:"導論", score:105},
+  {name:"壓力桿件", score:200},
+  {name:"梁桿件", score:115},
+  {name:"梁柱桿件", score:80},
+  {name:"拉力桿件", score:70},
+  {name:"螺栓接合", score:40},
+  {name:"銲接接合", score:225},
+  {name:"耐震設計", score:0},
+  {name:"綜合型考題", score:165},
+];
+
+const SUFFIX_BY_N = {
+  1: ["－ 精讀＋例題（內容較少，抓重點即可）"],
+  2: ["－ 理論與公式", "－ 例題演算（單題約20–25分鐘，練2–3題）"],
+  3: ["－ 理論與公式", "－ 例題演算（單題約20–25分鐘，練2題）", "－ 例題演算加深（再練2題）+ 整理筆記"],
+  4: ["－ 理論與公式", "－ 例題演算（單題約20–25分鐘，練2題）", "－ 例題演算加深（再練2–3題）", "－ 綜合題型演練 + 整理公式卡"],
+};
+
+/* QUEUE：先產生「不含日期」的內容清單，日期留給下面依星期五＝緩衝日、週末雙倍量的規則來排 */
+const S1_QUEUE = [];
+function qpush(type, text, week, weekLabel, core){ S1_QUEUE.push({type, text, week, weekLabel, core:!!core}); }
+function genSubjectBlock(chapters, subjectPrefix, weekKey, weekLabel, useScore){
+  chapters.forEach(c=>{
+    const n = c.days ?? (useScore ? scoreTierDays(c.score) : starTierDays(c.stars));
+    const isCore = useScore ? (c.score>=200) : (c.stars>=4);
+    const label = subjectPrefix + ' ' + c.name + (useScore ? (c.score?`（近10年${c.score}分）`:'（近10年0分，但可能考問答）') : (c.stars? ' '+'★'.repeat(c.stars) : ''));
+    const suffixes = SUFFIX_BY_N[Math.min(4,Math.max(1,n))];
+    for(let i=0;i<n;i++) qpush('study', label+' '+suffixes[i], weekKey, weekLabel, isCore);
+  });
+  qpush('practice', subjectPrefix+' 全章綜合練習題（挑2–3個重點題型，注意每題可能要20分鐘以上）', weekKey, weekLabel, false);
+  qpush('review', subjectPrefix+' 考古題限時演練＋檢討，記錄仍不熟的章節', weekKey, weekLabel, false);
+}
+genSubjectBlock(RC_CH, 'RC', 'RC', 'RC · 鋼筋混凝土', false);
+genSubjectBlock(PC_CH, 'PC', 'PC', 'PC · 預力混凝土', false);
+genSubjectBlock(SD_CH, '結動', 'SD', '結構動力', false);
+genSubjectBlock(EQ_CH, '耐震', 'EQ', '耐震設計', false);
+genSubjectBlock(STEEL_CH, '鋼構', 'ST', '鋼結構設計', true);
+
+/* 收尾：每科考古題 Round1＋Round2、全真模擬考、最終衝刺 —— 週末雙倍時間讓我們補回這一段的深度 */
+['RC','PC','結構動力','耐震設計','鋼結構設計'].forEach(subj=>{
+  qpush('practice', subj+' 考古題限時演練（Round 1）', 'FINAL', '第一天科目．總複習與模擬考', false);
+  qpush('review', subj+' 考古題檢討＋弱點鎖定（Round 1）', 'FINAL', '第一天科目．總複習與模擬考', false);
+});
+['RC','PC','結構動力','耐震設計','鋼結構設計'].forEach(subj=>{
+  qpush('practice', subj+' 針對Round1弱點，再演練一份考古題（Round 2）', 'FINAL', '第一天科目．總複習與模擬考', false);
+  qpush('review', subj+' Round2 檢討，確認弱點是否補起來了', 'FINAL', '第一天科目．總複習與模擬考', false);
+});
+qpush('mock', '全真模擬考－上半場（依實際考程安排科目與時間）', 'FINAL', '第一天科目．總複習與模擬考', false);
+qpush('mock', '全真模擬考－下半場', 'FINAL', '第一天科目．總複習與模擬考', false);
+qpush('review', '模擬考逐題檢討（上半場）', 'FINAL', '第一天科目．總複習與模擬考', false);
+qpush('review', '模擬考逐題檢討（下半場）＋更新弱點清單', 'FINAL', '第一天科目．總複習與模擬考', false);
+qpush('study', '整理最終版公式卡，快速掃過所有章節重點', 'FINAL', '第一天科目．總複習與模擬考', false);
+qpush('study', '確認應試文具、交通、時間安排', 'FINAL', '第一天科目．總複習與模擬考', false);
+qpush('buffer', '心態調整、提早睡，輕鬆看筆記即可，避免熬夜衝新題', 'FINAL', '第一天科目．總複習與模擬考', false);
+
+/* 依星期五＝緩衝日、週末（六、日）雙倍內容量的規則，把 QUEUE 排上日期 */
+const S1 = [];
+(function scheduleS1(){
+  const START = new Date("2026-07-09T00:00:00");
+  let qi = 0, cur = new Date(START);
+  while(qi < S1_QUEUE.length){
+    const dow = cur.getDay(); // 0=日 ... 5=五 6=六
+    if(dow===5){
+      S1.push({date:isoOf(cur), type:'buffer', tasks:['彈性緩衝日（可全休，或補前面落後的進度）'], week:'rest', weekLabel:'彈性緩衝', core:false});
+    } else if(dow===6 || dow===0){
+      const items=[];
+      if(qi<S1_QUEUE.length) items.push(S1_QUEUE[qi++]);
+      if(qi<S1_QUEUE.length) items.push(S1_QUEUE[qi++]);
+      S1.push({date:isoOf(cur), type:items[0].type, tasks:items.map(it=>it.text), week:items[0].week, weekLabel:items[0].weekLabel, core:items.some(it=>it.core)});
+    } else {
+      const it = S1_QUEUE[qi++];
+      S1.push({date:isoOf(cur), type:it.type, tasks:[it.text], week:it.week, weekLabel:it.weekLabel, core:it.core});
+    }
+    cur = addDays(cur,1);
+  }
+  // 依分組重新計算每組顯示的日期範圍
+  const byWeek={};
+  S1.forEach(day=>{ (byWeek[day.week]=byWeek[day.week]||[]).push(day); });
+  Object.values(byWeek).forEach(arr=>{
+    const r = arr[0].date.slice(5).replace('-','/') + ' – ' + arr[arr.length-1].date.slice(5).replace('-','/');
+    arr.forEach(dy=> dy.range = r);
+  });
+  // 提前完成的話，剩下的天數變成考前的獎勵緩衝日（仍保留週五固定緩衝的規則）
+  const lastDate = new Date(S1[S1.length-1].date+"T00:00:00");
+  const examDate = new Date("2026-11-14T00:00:00");
+  let bd = addDays(lastDate,1);
+  while(bd < examDate){
+    S1.push({date:isoOf(bd), type:'buffer', tasks:["提前完成進度🎉 這幾天可以全休、或自由複習你覺得還不熟的章節"], week:'bonus', weekLabel:'考前彈性緩衝（提前完成的獎勵）', range:isoOf(bd).slice(5).replace('-','/'), core:false});
+    bd = addDays(bd,1);
+  }
+  S1.push({date:"2026-11-14", type:"exam", tasks:["應試 Day 1：RC / PC / 結構動力 / 耐震設計 / 鋼結構設計"], week:"exam", weekLabel:"檢視考試", range:"11/14 – 11/15", core:false});
+  S1.push({date:"2026-11-15", type:"exam", tasks:["應試 Day 2：結構 / 土壤力學 / 基礎工程（尚未準備，以應試經驗為主，量力而為）"], week:"exam", weekLabel:"檢視考試", range:"11/14 – 11/15", core:false});
+})();
+
+
+
+/* ============ STAGE 2 : generated day-by-day from monthly task lists ============ */
+const S2_MONTHS = [
+  {start:"2026-11-16", end:"2026-11-30", label:"11月下半 · 考後檢討與休息", tasks:[
+    "檢討11月檢視考結果，標記第一天各科具體弱點章節",
+    "依弱點調整階段二各月份的時間分配",
+    "給自己1–2週真正休息，避免直接倦怠"
+  ]},
+  {start:"2026-12-01", end:"2026-12-31", label:"12月 · 結構分析（一）", tasks:[
+    "結構 Ch.1 序論","結構 Ch.2 穩定分析 ★","結構 Ch.3 靜定梁分析 ★★★★★",
+    "結構 Ch.4 靜定鋼架分析 ★★★★★","結構 Ch.5 靜定桁架分析 ★★★★★",
+    "結構 Ch.6 靜定結構變位分析 ★★★★","結構 Ch.7 靜定結構影響線 ★★★"
+  ]},
+  {start:"2027-01-01", end:"2027-01-31", label:"1月 · 結構分析（二）+ 總複習", tasks:[
+    "結構 Ch.8 諧和變形法 ★★","結構 Ch.9 傾角變位法 ★★★","結構 Ch.10 彎矩分配法 ★★★",
+    "結構 Ch.11 綜合彎矩分配法 ★★","結構 Ch.12 靜不定結構影響線 ★★","結構 Ch.13 結構矩陣 ★★",
+    "結構 Ch.14 靜不定結構之近似分析 ★","結構科14章總複習 + 考古題演練"
+  ]},
+  {start:"2027-02-01", end:"2027-02-28", label:"2月 · 土壤力學", tasks:[
+    "土力 Ch.1 序論","土力 Ch.2 土壤基本指數 ★★","土力 Ch.3 土壤分類 ★★★","土力 Ch.4 土壤應力 ★★",
+    "土力 Ch.5 滲透性 ★★★★","土力 Ch.6 壓縮性 ★★★★","土力 Ch.7 剪力強度 ★★★★","土壤力學總複習 + 考古題演練"
+  ]},
+  {start:"2027-03-01", end:"2027-03-31", label:"3月 · 基礎工程", tasks:[
+    "基工 Ch.1 側向土壓力與擋土壁體 ★★★★","基工 Ch.2 邊坡穩定分析 ★★","基工 Ch.3 淺基礎承載力 ★★★★",
+    "基工 Ch.4 筏基與開挖檢討 ★★","基工 Ch.5 樁基礎 ★★★★","基工 Ch.6 夯實與地盤改良 ★",
+    "基工 Ch.7 液化 ★","基礎工程總複習 + 考古題演練"
+  ]},
+  {start:"2027-04-01", end:"2027-04-30", label:"4月 · Day2 總複習 + 考古題", tasks:[
+    "結構/土力/基工 各限時演練1份考古題","整理 Day2 三科公式卡與易錯筆記"
+  ]},
+  {start:"2027-05-01", end:"2027-05-31", label:"5月 · Day1複習週期二（RC+PC）", tasks:[
+    "RC 全章重點回顧，優先鎖定★★★★以上章節","PC 全章重點回顧，優先鎖定★★★★以上章節","RC + PC 考古題各1份"
+  ]},
+  {start:"2027-06-01", end:"2027-06-30", label:"6月 · Day1複習週期二（結動/耐震/鋼構）", tasks:[
+    "結構動力 + 耐震設計 重點回顧","鋼結構設計重點回顧，優先鎖定銲接接合、壓力桿件","結動/耐震 + 鋼構 考古題各1份"
+  ]},
+  {start:"2027-07-01", end:"2027-07-31", label:"7月 · Day2複習週期二", tasks:[
+    "結構/土力/基工 重點回顧","Day2三科考古題各1份"
+  ]},
+  {start:"2027-08-01", end:"2027-08-31", label:"8月 · 全真模擬考（兩天）", tasks:[
+    "完整模擬 Day1（依真實考程排休息時間）","完整模擬 Day2（依真實考程排休息時間）","逐題檢討兩天模擬考，列出最終弱點清單"
+  ]},
+  {start:"2027-09-01", end:"2027-09-30", label:"9月 · 弱點總清除", tasks:[
+    "針對模擬考弱點清單逐項補強（不重讀已熟章節）","再演練1–2份最新年度考古題"
+  ]},
+  {start:"2027-10-01", end:"2027-10-31", label:"10月 · 全科複習與考古題深化（緩衝月）", tasks:[
+    "依弱點清單，全科目再複習一輪","再演練2–3份最新年度考古題（全科）","整理所有科目最終版公式卡"
+  ]},
+  {start:"2027-11-01", end:"2027-11-12", label:"11月上旬 · 最後衝刺", tasks:[
+    "整理最終版公式卡，快速掃過全部章節重點","確認應試安排、提早調整作息","心態設定：這是一年多累積的成果，正常發揮即可"
+  ]},
+];
+
+function weekChunks(tasks, weeksCount){
+  const m = tasks.length;
+  const chunks=[];
+  if(m<=weeksCount){
+    for(let k=0;k<weeksCount;k++) chunks.push(k<m ? [tasks[k]] : null);
+  } else {
+    for(let k=0;k<weeksCount;k++){
+      const s=Math.floor(k*m/weeksCount), e=Math.floor((k+1)*m/weeksCount);
+      chunks.push(tasks.slice(s,e));
+    }
+  }
+  return chunks;
+}
+function studyText(chunk, dayPos){
+  if(!chunk) return "本月內容複習與考古題深化練習（可依自己進度自訂）";
+  if(chunk.length===1){
+    const suff=["－ 精讀","－ 例題演算","－ 深化練習","－ 整理筆記"];
+    return chunk[0] + ' ' + suff[dayPos];
+  }
+  return chunk[Math.min(chunk.length-1, dayPos) % chunk.length];
+}
+function genMonthDays(month, monthIdx){
+  const days=[];
+  const start = new Date(month.start+"T00:00:00");
+  const end = new Date(month.end+"T00:00:00");
+  const totalDays = Math.round((end-start)/86400000)+1;
+  const weeksCount = Math.ceil(totalDays/7);
+  const chunks = weekChunks(month.tasks, weeksCount);
+  let cur = new Date(start);
+  let cycle = 0;
+  while(cur <= end){
+    const chunk = chunks[cycle];
+    for(let i=0;i<7 && cur<=end;i++){
+      let type, text;
+      if(i<4){ type='study'; text=studyText(chunk, i); }
+      else if(i===4){ type='buffer'; text='彈性緩衝日'; }
+      else if(i===5){ type='practice'; text = chunk ? ('練習：'+chunk.join('、')) : '本月考古題演練'; }
+      else { type='review'; text = (chunk ? ('本週複習：'+chunk.join('、')) : '本月總複習') + '，記錄不熟之處'; }
+      days.push({date:isoOf(cur), type, tasks:[text], week:'m'+monthIdx, weekLabel:month.label, range:month.start.slice(5).replace('-','/')+' – '+month.end.slice(5).replace('-','/'), core:false});
+      cur = addDays(cur,1);
+    }
+    cycle++;
+  }
+  return days;
+}
+let S2 = [];
+S2_MONTHS.forEach((mo, i)=>{ S2 = S2.concat(genMonthDays(mo, i)); });
+S2.push({date:"2027-11-13", type:"exam", tasks:["應試 Day 1：RC / PC / 結構動力 / 耐震設計 / 鋼結構設計（日期為暫定，請依正式公告調整）"], week:"exam", weekLabel:"目標考試", range:"2027/11 中（暫定）", core:false});
+S2.push({date:"2027-11-14", type:"exam", tasks:["應試 Day 2：結構 / 土壤力學 / 基礎工程"], week:"exam", weekLabel:"目標考試", range:"2027/11 中（暫定）", core:false});
+
+/* ============ Persistent storage ============ */
+let STATE = {s1:{}, s2:{}};
+let saveTimer=null;
+async function loadState(){
+  try{
+    const res = await window.storage.get('sfe-progress-v2', false);
+    if(res && res.value) STATE = JSON.parse(res.value);
+  }catch(e){ /* no data yet */ }
+  if(!STATE.s1) STATE.s1={};
+  if(!STATE.s2) STATE.s2={};
+}
+function queueSave(){
+  document.getElementById('saveStatus').textContent = '儲存中…';
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async ()=>{
+    try{
+      await window.storage.set('sfe-progress-v2', JSON.stringify(STATE), false);
+      document.getElementById('saveStatus').textContent = '已儲存 ✓';
+    }catch(e){ document.getElementById('saveStatus').textContent = '儲存失敗，稍後重試'; }
+  }, 400);
+}
+
+/* ============ Generic day-pager ============ */
+const pagers = {}; // prefix -> {days, idx}
+
+function buildPager(prefix, days){
+  pagers[prefix] = {days, idx:0};
+  const pagerEl = document.getElementById(prefix+'-pager');
+  pagerEl.innerHTML='';
+  const tKey = todayKey();
+
+  days.forEach((dayObj, idx)=>{
+    const stateSlice = STATE[prefix];
+    const rec = stateSlice[dayObj.date] || {done:false, note:''};
+    const isToday = dayObj.date === tKey;
+    const dt = new Date(dayObj.date+'T00:00:00');
+    const dowLabel = DOW[dt.getDay()];
+
+    const page = document.createElement('div');
+    page.className = 'day-page ' + (isToday?'today':'') + (dayObj.type==='exam'?' exam':'');
+    page.dataset.idx = idx;
+    page.innerHTML = `
+      <div class="dp-date-row">
+        <span class="dp-date">${dayObj.date.slice(5).replace('-','/')}</span>
+        <span class="dp-dow">週${dowLabel}</span>
+        <span class="dp-type ${dayObj.type}">${typeLabelMap[dayObj.type]}</span>
+        ${isToday?'<span class="badge-here">今天</span>':''}
+      </div>
+      <div class="dp-week-range">${dayObj.weekLabel} · ${dayObj.range}${dayObj.core?'<span class="dp-core">核心重點</span>':''}</div>
+      <div class="dp-task-box">
+        <input type="checkbox" ${rec.done?'checked':''}>
+        <div class="dp-task-text ${rec.done?'done-text':''}">${dayObj.tasks.join('；')}</div>
+      </div>
+      <div class="dp-note-label">備註：卡在哪裡、還不熟的地方…</div>
+      <div class="dp-note"><textarea placeholder="例如：這題公式一直記不熟 / 例題看不懂第3步…">${rec.note||''}</textarea></div>
+      <div class="dp-spacer"></div>
+      ${idx===0?'<div class="dp-swipehint">← 左右滑動切換日期 →</div>':''}
+    `;
+    const cb = page.querySelector('input');
+    const taskText = page.querySelector('.dp-task-text');
+    const noteEl = page.querySelector('textarea');
+    cb.addEventListener('change', ()=>{
+      stateSlice[dayObj.date] = stateSlice[dayObj.date] || {done:false, note:''};
+      stateSlice[dayObj.date].done = cb.checked;
+      taskText.classList.toggle('done-text', cb.checked);
+      queueSave(); updateProgress(prefix); renderReview(); renderFullTable();
+    });
+    noteEl.addEventListener('input', ()=>{
+      stateSlice[dayObj.date] = stateSlice[dayObj.date] || {done:false, note:''};
+      stateSlice[dayObj.date].note = noteEl.value;
+      queueSave();
+    });
+    noteEl.addEventListener('blur', renderReview);
+    pagerEl.appendChild(page);
+  });
+
+  let startIdx = days.findIndex(dd=>dd.date===tKey);
+  if(startIdx===-1){
+    startIdx = days.findIndex(dd=> new Date(dd.date) > new Date(tKey));
+    if(startIdx===-1) startIdx = days.length-1;
+  }
+  pagers[prefix].idx = startIdx;
+  requestAnimationFrame(()=> scrollToDay(prefix, startIdx, false));
+
+  pagerEl.addEventListener('scroll', debounce(()=>{
+    const idx = Math.round(pagerEl.scrollLeft / pagerEl.clientWidth);
+    if(idx!==pagers[prefix].idx && idx>=0 && idx<days.length){ pagers[prefix].idx = idx; updateTopbar(prefix); }
+  }, 80));
+
+  updateProgress(prefix);
+}
+
+function scrollToDay(prefix, idx, smooth){
+  const days = pagers[prefix].days;
+  idx = Math.max(0, Math.min(days.length-1, idx));
+  const pagerEl = document.getElementById(prefix+'-pager');
+  pagerEl.scrollTo({left: idx*pagerEl.clientWidth, behavior: smooth===false?'auto':'smooth'});
+  pagers[prefix].idx = idx;
+  updateTopbar(prefix);
+}
+function updateTopbar(prefix){
+  const days = pagers[prefix].days;
+  const dayObj = days[pagers[prefix].idx];
+  if(!dayObj) return;
+  document.getElementById(prefix+'-week').textContent = dayObj.weekLabel;
+  document.getElementById(prefix+'-pos').textContent = `第 ${pagers[prefix].idx+1} / ${days.length} 天`;
+}
+function updateProgress(prefix){
+  const days = pagers[prefix].days.filter(dd=>dd.type!=='exam');
+  const stateSlice = STATE[prefix];
+  const done = days.filter(dd=> stateSlice[dd.date] && stateSlice[dd.date].done).length;
+  const pct = days.length ? Math.round(done/days.length*100) : 0;
+  document.getElementById(prefix+'-progFill').style.width = pct+'%';
+  document.getElementById(prefix+'-progText').textContent = `已完成 ${done} / ${days.length} 天（${pct}%）`;
+}
+
+function setupNav(prefix){
+  document.getElementById(prefix+'-prevBtn').addEventListener('click', ()=> scrollToDay(prefix, pagers[prefix].idx-1));
+  document.getElementById(prefix+'-nextBtn').addEventListener('click', ()=> scrollToDay(prefix, pagers[prefix].idx+1));
+  document.getElementById(prefix+'-todayBtn').addEventListener('click', ()=>{
+    const days = pagers[prefix].days;
+    const tKey = todayKey();
+    let idx = days.findIndex(dd=>dd.date===tKey);
+    if(idx===-1) idx = days.findIndex(dd=> new Date(dd.date) > new Date(tKey));
+    if(idx===-1) idx = days.length-1;
+    scrollToDay(prefix, idx);
+  });
+}
+window.addEventListener('resize', ()=>{
+  Object.keys(pagers).forEach(prefix=> scrollToDay(prefix, pagers[prefix].idx, false));
+});
+
+/* ============ Review tab ============ */
+function renderReview(){
+  const s1Days = S1.filter(x=>x.type!=='exam');
+  const s2Days = S2.filter(x=>x.type!=='exam');
+  const s1Done = s1Days.filter(x=> STATE.s1[x.date] && STATE.s1[x.date].done).length;
+  const s2Done = s2Days.filter(x=> STATE.s2[x.date] && STATE.s2[x.date].done).length;
+  const pct1 = s1Days.length? Math.round(s1Done/s1Days.length*100):0;
+  const pct2 = s2Days.length? Math.round(s2Done/s2Days.length*100):0;
+
+  const statsHtml = `
+    <div class="rv-stat-box"><div class="num">${pct1}%</div><div class="lbl">階段一完成度（${s1Done}/${s1Days.length} 天）</div></div>
+    <div class="rv-stat-box"><div class="num">${pct2}%</div><div class="lbl">階段二完成度（${s2Done}/${s2Days.length} 天）</div></div>`;
+  document.getElementById('ovStats').innerHTML = statsHtml;
+  document.getElementById('rvStats').innerHTML = statsHtml;
+
+  const notesEl = document.getElementById('rvNotes');
+  const noteItems = [];
+  [['s1',S1],['s2',S2]].forEach(([key,arr])=>{
+    arr.forEach(day=>{
+      const rec = STATE[key][day.date];
+      if(rec && rec.note && rec.note.trim()!==''){
+        noteItems.push({date:day.date, label:day.tasks.join('；'), note:rec.note});
+      }
+    });
+  });
+  noteItems.sort((a,b)=> a.date<b.date?-1:1);
+  notesEl.innerHTML = noteItems.length ? noteItems.map(n=>
+    `<div class="rv-list-item"><span class="rv-date">${n.date}</span>${n.label}<br><span style="opacity:.75">→ ${n.note}</span></div>`
+  ).join('') : '<div class="rv-empty">目前還沒有任何備註。做完每天的項目後，若卡住了就寫在備註欄，這裡會自動彙整。</div>';
+
+  const overdueEl = document.getElementById('rvOverdue');
+  const today = new Date(todayKey());
+  const overdue = [];
+  [['s1',S1],['s2',S2]].forEach(([key,arr])=>{
+    arr.forEach(day=>{
+      if(day.type==='exam') return;
+      const rec = STATE[key][day.date];
+      if(new Date(day.date) < today && !(rec && rec.done)) overdue.push(day);
+    });
+  });
+  overdueEl.innerHTML = overdue.length ? overdue.map(day=>
+    `<div class="rv-list-item overdue"><span class="rv-date">${day.date}</span>${day.tasks.join('；')}</div>`
+  ).join('') : '<div class="rv-empty">目前沒有落後的項目 🎉</div>';
+}
+
+/* ============ Full schedule overview table ============ */
+function renderFullTable(){
+  const tKey = todayKey();
+  function buildRows(days, stateSlice){
+    return days.map(dayObj=>{
+      const rec = stateSlice[dayObj.date];
+      const done = rec && rec.done;
+      const dt = new Date(dayObj.date+'T00:00:00');
+      const dowLabel = DOW[dt.getDay()];
+      const isToday = dayObj.date === tKey;
+      const searchText = (dayObj.weekLabel+' '+dayObj.tasks.join(' ')).toLowerCase();
+      const rowClass = (dayObj.type==='exam' ? 'ft-exam' : (isToday ? 'ft-today' : ''));
+      return `<tr class="${rowClass}" data-search="${searchText.replace(/"/g,'')}">
+        <td class="ft-date">${dayObj.date}</td>
+        <td>${dowLabel}</td>
+        <td class="ft-type">${typeLabelMap[dayObj.type]}</td>
+        <td>${dayObj.weekLabel} — ${dayObj.tasks.join('；')}${dayObj.core?' <span class="dp-core">核心</span>':''}</td>
+        <td class="ft-done">${done?'✓':'—'}</td>
+      </tr>`;
+    }).join('');
+  }
+  document.querySelector('#fullTableS1 tbody').innerHTML = buildRows(S1, STATE.s1);
+  document.querySelector('#fullTableS2 tbody').innerHTML = buildRows(S2, STATE.s2);
+  applyFullTableSearch();
+}
+function applyFullTableSearch(){
+  const q = (document.getElementById('fullTableSearch').value||'').trim().toLowerCase();
+  document.querySelectorAll('#fullTableS1 tbody tr, #fullTableS2 tbody tr').forEach(tr=>{
+    const match = !q || (tr.dataset.search||'').indexOf(q) !== -1;
+    tr.style.display = match ? '' : 'none';
+  });
+}
+document.getElementById('fullTableSearch').addEventListener('input', applyFullTableSearch);
+
+/* ============ Tabs ============ */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab==='stage1') requestAnimationFrame(()=> scrollToDay('s1', pagers.s1.idx, false));
+    if(btn.dataset.tab==='stage2') requestAnimationFrame(()=> scrollToDay('s2', pagers.s2.idx, false));
+  });
+});
+
+/* ============ Init ============ */
+(async function init(){
+  await loadState();
+  buildPager('s1', S1);
+  buildPager('s2', S2);
+  setupNav('s1');
+  setupNav('s2');
+  renderReview();
+  renderFullTable();
+  document.getElementById('saveStatus').textContent = '已載入 ✓';
+})();
+</script>
+</body>
+</html>
