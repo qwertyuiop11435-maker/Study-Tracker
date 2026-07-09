@@ -706,6 +706,11 @@ function initGoogleAuth(){
   // 就能直接恢復連線；如果從沒授權過，會安靜地失敗，使用者只需按一次按鈕即可。
   setSyncStatus('自動嘗試連接雲端…');
   gTokenClient.requestAccessToken({prompt:'none'});
+  // 保護機制：如果 3 秒內沒有任何回應（常見於第一次使用、還沒授權過），
+  // 就把文字改回提示使用者手動點擊，避免畫面一直卡在「自動嘗試連接雲端…」。
+  setTimeout(()=>{
+    if(!gAccessToken) setSyncStatus('尚未連接，點左邊按鈕登入一次即可');
+  }, 3000);
 }
 
 function startAutoRefresh(){
