@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>結構技師考試讀書計畫（每日版）</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root{
     --blue-0:#0c2540; --blue-1:#123a5e; --blue-2:#1a4a76;
@@ -38,6 +39,15 @@
   .tb-cell .k{font-family:"IBM Plex Mono",monospace; font-size:10px; letter-spacing:.15em; color:var(--cyan); text-transform:uppercase;}
   .tb-cell .v{font-size:15px; margin-top:4px; font-weight:600; color:#fff;}
   #saveStatus{font-size:11px; color:var(--ok); font-family:"IBM Plex Mono",monospace;}
+
+  .sync-bar{max-width:1060px; margin:0 auto 18px; padding:0 20px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .sync-btn{
+    font-family:"IBM Plex Mono",monospace; background:var(--cyan); color:var(--blue-0); border:none;
+    padding:9px 16px; border-radius:4px; font-size:12px; font-weight:700; cursor:pointer;
+  }
+  .sync-btn:hover{opacity:.9;}
+  .sync-btn.connected{background:var(--ok); color:#fff;}
+  #syncStatus{font-size:12px; color:var(--line); opacity:.8; font-family:"IBM Plex Mono",monospace;}
 
   .tabs{max-width:1060px; margin:0 auto 18px; padding:0 20px; display:flex; gap:8px; flex-wrap:wrap;}
   .tab-btn{font-family:"IBM Plex Mono",monospace; background:transparent; border:1px solid var(--line-dim); color:var(--line); padding:9px 15px; font-size:12px; letter-spacing:.05em; cursor:pointer; border-radius:3px;}
@@ -161,6 +171,11 @@
       <div class="tb-cell"><div class="k">儲存狀態</div><div class="v" id="saveStatus">載入中…</div></div>
     </div>
   </div>
+</div>
+
+<div class="sync-bar">
+  <button class="sync-btn" id="syncBtn">🔗 連接 Google 雲端同步</button>
+  <span id="syncStatus">尚未連接，進度只存在這個裝置</span>
 </div>
 
 <div class="tabs">
@@ -607,10 +622,28 @@ S2_MONTHS.forEach((mo, i)=>{ S2 = S2.concat(genMonthDays(mo, i)); });
 S2.push({date:"2027-11-13", type:"exam", tasks:["應試 Day 1：RC / PC / 結構動力 / 耐震設計 / 鋼結構設計（日期為暫定，請依正式公告調整）"], week:"exam", weekLabel:"目標考試", range:"2027/11 中（暫定）", core:false});
 S2.push({date:"2027-11-14", type:"exam", tasks:["應試 Day 2：結構 / 土壤力學 / 基礎工程"], week:"exam", weekLabel:"目標考試", range:"2027/11 中（暫定）", core:false});
 
-/* ============ Persistent storage (瀏覽器本機儲存 localStorage) ============ */
+/* ============ Persistent storage (localStorage) + Google Drive sync ============ */
 const STORAGE_KEY = 'sfe-progress-v2';
-let STATE = {s1:{}, s2:{}};
+
+/* ⚠️ 請把下面這行換成你自己在 Google Cloud Console 申請的 OAuth Client ID
+   （教學請看聊天室裡的說明），沒換之前「連接 Google 雲端同步」按鈕會顯示錯誤，
+   但完全不影響本機儲存 localStorage 的功能。 */
+const GOOGLE_CLIENT_ID = '請貼上你的CLIENT_ID.apps.googleusercontent.com';
+
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
+const DRIVE_FILE_NAME = 'sfe-progress-v2.json';
+
+let STATE = {s1:{}, s2:{}, updatedAt:0};
 let saveTimer=null;
+let gTokenClient = null;
+let gAccessToken = null;
+let gDriveFileId = null;
+
+function setSyncStatus(text){
+  const el = document.getElementById('syncStatus');
+  if(el) el.textContent = text;
+}
+
 async function loadState(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -618,16 +651,117 @@ async function loadState(){
   }catch(e){ /* 尚無資料或格式錯誤，使用預設空狀態 */ }
   if(!STATE.s1) STATE.s1={};
   if(!STATE.s2) STATE.s2={};
+  if(!STATE.updatedAt) STATE.updatedAt=0;
 }
+
+function saveLocal(){
+  STATE.updatedAt = Date.now();
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE)); }catch(e){}
+}
+
 function queueSave(){
   document.getElementById('saveStatus').textContent = '儲存中…';
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(()=>{
-    try{
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE));
-      document.getElementById('saveStatus').textContent = '已儲存 ✓';
-    }catch(e){ document.getElementById('saveStatus').textContent = '儲存失敗，稍後重試'; }
-  }, 400);
+  saveTimer = setTimeout(async ()=>{
+    saveLocal();
+    document.getElementById('saveStatus').textContent = '已儲存 ✓';
+    if(gAccessToken){ await pushToDrive(); }
+  }, 500);
+}
+
+/* ---- Google OAuth ---- */
+function initGoogleAuth(){
+  if(!window.google || !google.accounts || !google.accounts.oauth2){
+    setTimeout(initGoogleAuth, 500); // GIS 腳本可能還沒載入完，稍後再試
+    return;
+  }
+  gTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: DRIVE_SCOPE,
+    callback: async (resp)=>{
+      if(resp.error){ setSyncStatus('登入失敗，請再試一次'); return; }
+      gAccessToken = resp.access_token;
+      document.getElementById('syncBtn').textContent = '✓ 已連接雲端';
+      document.getElementById('syncBtn').classList.add('connected');
+      setSyncStatus('同步中…');
+      await syncFromDrive();
+    }
+  });
+  document.getElementById('syncBtn').addEventListener('click', ()=>{
+    if(GOOGLE_CLIENT_ID.indexOf('請貼上') === 0){
+      setSyncStatus('尚未設定 Google Client ID，請先完成設定教學');
+      return;
+    }
+    gTokenClient.requestAccessToken({prompt: gAccessToken ? '' : 'consent'});
+  });
+}
+
+/* ---- Drive REST helpers (使用 appDataFolder，不會出現在使用者的一般雲端硬碟畫面中) ---- */
+async function driveFindFileId(){
+  const q = encodeURIComponent(`name='${DRIVE_FILE_NAME}'`);
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&fields=files(id,name)&q=${q}`, {
+    headers:{ Authorization: 'Bearer '+gAccessToken }
+  });
+  const data = await res.json();
+  return (data.files && data.files.length) ? data.files[0].id : null;
+}
+
+async function driveDownload(fileId){
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+    headers:{ Authorization: 'Bearer '+gAccessToken }
+  });
+  if(!res.ok) return null;
+  return await res.json();
+}
+
+async function driveUpload(fileId, content){
+  const boundary = 'sfe_progress_boundary';
+  const metadata = fileId ? { name: DRIVE_FILE_NAME } : { name: DRIVE_FILE_NAME, parents:['appDataFolder'] };
+  const body =
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n`+
+    `--${boundary}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(content)}\r\n`+
+    `--${boundary}--`;
+  const url = fileId
+    ? `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`
+    : `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`;
+  const res = await fetch(url, {
+    method: fileId ? 'PATCH' : 'POST',
+    headers:{ Authorization: 'Bearer '+gAccessToken, 'Content-Type': `multipart/related; boundary=${boundary}` },
+    body
+  });
+  const data = await res.json();
+  return data.id;
+}
+
+async function pushToDrive(){
+  if(!gAccessToken) return;
+  try{
+    gDriveFileId = await driveUpload(gDriveFileId, STATE);
+    setSyncStatus('已同步至 Google 雲端 ✓');
+  }catch(e){ setSyncStatus('雲端同步失敗（已存本機）'); }
+}
+
+async function syncFromDrive(){
+  try{
+    gDriveFileId = await driveFindFileId();
+    if(gDriveFileId){
+      const remote = await driveDownload(gDriveFileId);
+      if(remote && (remote.updatedAt||0) > (STATE.updatedAt||0)){
+        // 雲端資料比較新，用雲端覆蓋本機並重新整理畫面
+        STATE = remote;
+        try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE)); }catch(e){}
+        setSyncStatus('已從雲端還原最新進度 ✓，重新整理畫面…');
+        location.reload();
+        return;
+      } else {
+        // 本機資料比較新（或一樣新），把本機資料推上雲端
+        await pushToDrive();
+      }
+    } else {
+      // 雲端還沒有檔案，第一次上傳
+      await pushToDrive();
+    }
+  }catch(e){ setSyncStatus('同步失敗：'+(e.message||e)); }
 }
 
 /* ============ Generic day-pager ============ */
@@ -841,6 +975,7 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
   renderReview();
   renderFullTable();
   document.getElementById('saveStatus').textContent = '已載入 ✓';
+  initGoogleAuth();
 })();
 </script>
 </body>
