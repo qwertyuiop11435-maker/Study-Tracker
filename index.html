@@ -670,6 +670,8 @@ function queueSave(){
 }
 
 /* ---- Google OAuth ---- */
+let gAutoRefreshTimer = null;
+
 function initGoogleAuth(){
   if(!window.google || !google.accounts || !google.accounts.oauth2){
     setTimeout(initGoogleAuth, 500); // GIS 腳本可能還沒載入完，稍後再試
@@ -679,12 +681,17 @@ function initGoogleAuth(){
     client_id: GOOGLE_CLIENT_ID,
     scope: DRIVE_SCOPE,
     callback: async (resp)=>{
-      if(resp.error){ setSyncStatus('登入失敗，請再試一次'); return; }
+      if(resp.error){
+        // 靜默嘗試失敗是正常情況（例如還沒授權過），不用嚇使用者
+        setSyncStatus('尚未連接，點左邊按鈕登入一次即可');
+        return;
+      }
       gAccessToken = resp.access_token;
       document.getElementById('syncBtn').textContent = '✓ 已連接雲端';
       document.getElementById('syncBtn').classList.add('connected');
       setSyncStatus('同步中…');
       await syncFromDrive();
+      startAutoRefresh();
     }
   });
   document.getElementById('syncBtn').addEventListener('click', ()=>{
@@ -694,6 +701,20 @@ function initGoogleAuth(){
     }
     gTokenClient.requestAccessToken({prompt: gAccessToken ? '' : 'consent'});
   });
+
+  // 頁面載入時自動嘗試「靜默登入」：如果之前已授權過，這裡通常不會跳出任何視窗，
+  // 就能直接恢復連線；如果從沒授權過，會安靜地失敗，使用者只需按一次按鈕即可。
+  setSyncStatus('自動嘗試連接雲端…');
+  gTokenClient.requestAccessToken({prompt:'none'});
+}
+
+function startAutoRefresh(){
+  clearInterval(gAutoRefreshTimer);
+  // access token 大約 1 小時後過期，這裡每 50 分鐘悄悄更新一次，
+  // 讓分頁只要開著，同步就能一直保持有效，不需要使用者再手動點擊。
+  gAutoRefreshTimer = setInterval(()=>{
+    if(gTokenClient) gTokenClient.requestAccessToken({prompt:'none'});
+  }, 50*60*1000);
 }
 
 /* ---- Drive REST helpers (使用 appDataFolder，不會出現在使用者的一般雲端硬碟畫面中) ---- */
